@@ -1,31 +1,22 @@
 import { showNotification } from '@vaadin/flow-frontend/a-notification';
 import '@vaadin/vaadin-button';
 import '@vaadin/vaadin-text-field';
-import { css, customElement, html, LitElement } from 'lit-element';
+import { virtual, html, useState } from 'haunted';
+import styles from './about-view.module.css';
 
-@customElement('about-view')
-export class AboutView extends LitElement {
-  name: string = '';
+export default virtual(() => {
+  const [name, setName] = useState('');
 
-  static get styles() {
-    return css`
-      :host {
-        display: block;
-        padding: 1em;
-      }
-    `;
-  }
-  render() {
-    return html`
-      <vaadin-text-field label="Your name" @value-changed="${this.nameChanged}"></vaadin-text-field>
-      <vaadin-button @click="${this.sayHello}">Say hello</vaadin-button>
-    `;
-  }
-  nameChanged(e: CustomEvent) {
-    this.name = e.detail.value;
-  }
+  return html`
+    <div class=${styles.host}>
+      <vaadin-text-field
+        label="Your name"
+        @value-changed="${(e: CustomEvent) => setName(e.detail.value)}"
+      ></vaadin-text-field>
 
-  sayHello() {
-    showNotification('Hello ' + this.name);
-  }
-}
+      <vaadin-button @click="${() => showNotification('Hello ' + name)}">
+        Say hello
+      </vaadin-button>
+    </div>
+  `;
+});

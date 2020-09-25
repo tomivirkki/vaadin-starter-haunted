@@ -1,39 +1,49 @@
-import { Flow } from '@vaadin/flow-frontend/Flow';
-import { Router } from '@vaadin/router';
+import { useEffect, useState, virtual } from 'haunted';
 
+import { render, html } from 'lit-html';
 import './global-styles';
+import useLazyView, { LazyView } from './useLazyView';
+import page from 'page';
 
-const { serverSideRoutes } = new Flow({
-  imports: () => import('../target/frontend/generated-flow-imports'),
-});
+page.base('/');
 
-const routes = [
-  // for client-side, place routes below (more info https://vaadin.com/docs/v15/flow/typescript/creating-routes.html)
+const CHILD_VIEWS: LazyView[] = [
   {
-	path: '',
-	component: 'main-view', 
-	action: async () => { await import ('./views/main/main-view'); },
-	children: [
-		{
-			path: '',
-			component: 'hello-world-view', 
-			action: async () => { await import ('./views/helloworld/hello-world-view'); }
-		},
-		{
-			path: 'hello',
-			component: 'hello-world-view', 
-			action: async () => { await import ('./views/helloworld/hello-world-view'); }
-		},
-		{
-			path: 'about',
-			component: 'about-view', 
-			action: async () => { await import ('./views/about/about-view'); }
-		},
- 		// for server-side, the next magic line sends all unmatched routes:
-		...serverSideRoutes // IMPORTANT: this must be the last entry in the array
-	]
-},
+    name: 'Hello World',
+    slug: 'hello',
+    viewImport: () => import('./views/helloworld/hello-world-view'),
+  },
+  {
+    name: 'About',
+    slug: 'about',
+    viewImport: () => import('./views/about/about-view'),
+  },
 ];
 
-export const router = new Router(document.querySelector('#outlet'));
-router.setRoutes(routes);
+const App = virtual(() => {
+  const [activeView, setActiveView] = useState(null);
+
+  const activeChildViewInstance = useLazyView(activeView);
+
+  useEffect(() => {
+    CHILD_VIEWS.forEach((view) =>
+      page(view.slug, () => {
+        // TODO: Figure out why this is needed. Should just need setActiveView(view)
+        setActiveView(null);
+        setTimeout(() => setActiveView(view));
+      })
+    );
+    page();
+  }, []);
+
+  const mainView = useLazyView({
+    slug: '',
+    name: 'main',
+    viewParams: [CHILD_VIEWS, activeView, activeChildViewInstance],
+    viewImport: () => import('./views/main/main-view'),
+  });
+
+  return html`${mainView}`;
+});
+
+render(App(), document.getElementById('outlet')!);

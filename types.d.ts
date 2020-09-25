@@ -3,7 +3,4 @@
 // This is needed for TypeScript compiler to declare and export as a TypeScript module.
 // It is recommended to commit this file to the VCS.
 // You might want to change the configurations to fit your preferences
-declare module '*.css' {
-    const content: string;
-    export default content;
-}
+declare module '*.css';

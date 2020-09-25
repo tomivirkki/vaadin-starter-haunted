@@ -1,5 +1,3 @@
-import { unsafeCSS, customElement, html, LitElement, PropertyValues, query } from 'lit-element';
-
 import '@vaadin/vaadin-button/vaadin-button';
 import '@vaadin/vaadin-custom-field/vaadin-custom-field';
 import '@vaadin/vaadin-combo-box/vaadin-combo-box';
@@ -21,41 +19,75 @@ import * as PersonEndpoint from '../../generated/PersonEndpoint';
 import PersonModel from '../../generated/com/example/application/data/entity/PersonModel';
 import { Binder, field } from '@vaadin/form';
 
-import { CSSModule } from '@vaadin/flow-frontend/css-utils';
-import styles from './hello-world-view.css';
+import styles from './hello-world-view.module.css';
+import { virtual, html } from 'haunted';
 
-@customElement('hello-world-view')
-export class HelloWorldViewElement extends LitElement {
+const countryCodes = [
+  '+354',
+  '+91',
+  '+62',
+  '+98',
+  '+964',
+  '+353',
+  '+44',
+  '+972',
+  '+39',
+  '+225',
+];
 
-  @query('#countryCode')
-  private countryCode: any;
+export default virtual(() => {
+  // Not sure what the element should be in this case....probably not this
+  const binderElement = document.createElement('div');
+  const binder = new Binder(binderElement, PersonModel);
 
-  static get styles() {
-    return [CSSModule('lumo-typography'), unsafeCSS(styles)];
-  }
+  const clearForm = () => binder.clear();
 
-  private binder = new Binder(this, PersonModel);
+  const save = async () => {
+    try {
+      await binder.submitTo(PersonEndpoint.update);
+      clearForm();
+      showNotification('Person details stored.', { position: 'bottom-start' });
+    } catch (error) {
+      if (error instanceof EndpointError) {
+        showNotification('Server error. ' + error.message, {
+          position: 'bottom-start',
+        });
+      } else {
+        throw error;
+      }
+    }
+  };
 
-  protected firstUpdated(_changedProperties: PropertyValues) {
-    super.firstUpdated(_changedProperties);
-
-    this.countryCode.items = ['+354', '+91', '+62', '+98', '+964', '+353', '+44', '+972', '+39', '+225'];
-  }
-
-  render() {
-    return html`
+  return html`
+    <div class=${styles.host}>
       <h3>Personal information</h3>
       <vaadin-form-layout style="width: 100%;">
-        <vaadin-text-field label="First name" ...="${field(this.binder.model.firstName)}"></vaadin-text-field>
-        <vaadin-text-field label="Last name" ...="${field(this.binder.model.lastName)}"></vaadin-text-field>
-        <vaadin-date-picker label="Birthday" ...="${field(this.binder.model.dateOfBirth)}"></vaadin-date-picker>
-        <vaadin-custom-field label="Phone number" ...="${field(this.binder.model.phone)}">
+        <vaadin-text-field
+          label="First name"
+          ...="${field(binder.model.firstName)}"
+        ></vaadin-text-field>
+
+        <vaadin-text-field
+          label="Last name"
+          ...="${field(binder.model.lastName)}"
+        ></vaadin-text-field>
+
+        <vaadin-date-picker
+          label="Birthday"
+          ...="${field(binder.model.dateOfBirth)}"
+        ></vaadin-date-picker>
+
+        <vaadin-custom-field
+          label="Phone number"
+          ...="${field(binder.model.phone)}"
+        >
           <vaadin-horizontal-layout theme="spacing">
             <vaadin-combo-box
               id="countryCode"
               style="width: 120px;"
               pattern="\\+\\d*"
               placeholder="Country"
+              .items=${countryCodes}
               prevent-invalid-input
             ></vaadin-combo-box>
             <vaadin-text-field
@@ -65,35 +97,22 @@ export class HelloWorldViewElement extends LitElement {
             ></vaadin-text-field>
           </vaadin-horizontal-layout>
         </vaadin-custom-field>
-        <vaadin-email-field label="Email address" ...="${field(this.binder.model.email)}"></vaadin-email-field>
-        <vaadin-text-field label="Occupation" ...="${field(this.binder.model.occupation)}"></vaadin-text-field>
+
+        <vaadin-email-field
+          label="Email address"
+          ...="${field(binder.model.email)}"
+        ></vaadin-email-field>
+
+        <vaadin-text-field
+          label="Occupation"
+          ...="${field(binder.model.occupation)}"
+        ></vaadin-text-field>
       </vaadin-form-layout>
-      <vaadin-horizontal-layout class="button-layout" theme="spacing">
-        <vaadin-button theme="primary" @click="${this.save}">
-          Save
-        </vaadin-button>
-        <vaadin-button @click="${this.clearForm}">
-          Cancel
-        </vaadin-button>
+
+      <vaadin-horizontal-layout class=${styles.buttonlayout} theme="spacing">
+        <vaadin-button theme="primary" @click="${save}"> Save </vaadin-button>
+        <vaadin-button @click="${clearForm}"> Cancel </vaadin-button>
       </vaadin-horizontal-layout>
-    `;
-  }
-
-  private async save() {
-    try {
-      await this.binder.submitTo(PersonEndpoint.update);
-      this.clearForm();
-      showNotification('Person details stored.', {position: 'bottom-start'});
-    } catch (error) {
-      if (error instanceof EndpointError) {
-        showNotification('Server error. ' + error.message, {position: 'bottom-start'});
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  private clearForm() {
-    this.binder.clear();
-  }
-}
+    </div>
+  `;
+});

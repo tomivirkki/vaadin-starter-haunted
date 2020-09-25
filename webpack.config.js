@@ -29,3 +29,14 @@ module.exports = merge(flowDefaults,
   //   ]
   // },
 );
+
+// Replace css raw-loader with css module loader
+module.exports.module.rules
+  .find(rule => rule.use[0] === 'raw-loader')
+  .use = ['style-loader', {
+    loader: 'css-loader',
+    options: {
+      importLoaders: 1,
+      modules: true
+    }
+  }];
